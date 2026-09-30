@@ -686,11 +686,17 @@ Consider implementing these additional security practices:
 
 ## Troubleshooting
 
-If you encounter an "Unable to authenticate" (ENEEDAUTH) error when publishing, first verify that the workflow filename matches exactly what you configured on [npmjs.com](https://npmjs.com), including the `.yml` extension. All fields are case-sensitive and must be exact. Also ensure you're using GitHub-hosted runners, GitLab.com shared runners, or CircleCI cloud, as self-hosted runners are not currently supported. For GitHub Actions specifically, check that the `id-token: write` permission is set in your workflow. For CircleCI, verify that your Organization ID, Project ID, and Pipeline definition ID match your CircleCI configuration.
+If you encounter an "Unable to authenticate" (ENEEDAUTH) error when publishing, first verify that the trusted publisher fields match exactly what you configured on [npmjs.com](https://npmjs.com). All fields are case-sensitive and must be exact. Also ensure you're using GitHub-hosted runners, GitLab.com shared runners, or CircleCI cloud, as self-hosted runners are not currently supported. For GitHub Actions, verify that the organization or user, repository, workflow filename, and environment name match, and check that the `id-token: write` permission is set in your workflow.  For GitLab CI, verify that the namespace, project name, CI file path, and environment name match.  For CircleCI, verify that your Organization ID, Project ID, Pipeline definition ID, Context IDs and VCS Origin match your CircleCI configuration.
 
 <Note>
 
-**Note:** npm does not verify your trusted publisher configuration when you save it. Double-check that your repository, workflow filename, and other details are correct, as errors will only appear when you attempt to publish.
+**Note:** npm does not verify your trusted publisher configuration when you save it. Double-check that all configuration fields are correct, as errors will only appear when you attempt to publish.
+
+</Note>
+
+<Note>
+
+**Note:** npm does not log OIDC exchange errors by default.  Run `npm` commands with the `--verbose` flag if you want to log OIDC errors to verify whether `npm` is obtaining and using an OIDC token.
 
 </Note>
 
@@ -701,6 +707,18 @@ If your package has private dependencies and `npm install` or `npm ci` is failin
 For packages in private repositories, provenance will not be generated even though you're using trusted publishing. This is a [known limitation](https://github.blog/changelog/2023-07-25-publishing-with-npm-provenance-from-private-source-repositories-is-no-longer-supported/) that applies regardless of whether your package itself is public or private.
 
 Some GitHub Actions workflows use `workflow_call` to invoke other workflows that run `npm publish`, or use `workflow_dispatch` for manual publishing. When this happens, validation checks the calling workflow's name instead of the workflow that actually contains the publish command, which can cause configuration mismatches. The `id-token: write` permission must also be given to both parent and child workflows.
+
+### CircleCI
+
+Because it's easy to mix up all of CircleCI's required UUIDs, you may find it helpful to decode the JWT `NPM_ID_TOKEN` obtained from `circleci run oidc get` to verify which Organization ID, Project ID, Pipeline definition ID, Context IDs and VCS Origin gets sent to npm.
+
+<Note>
+
+**Note:** Unfortunately, you cannot debug trusted publishing in SSH reruns. OIDC tokens with an SSH rerun claim are automatically rejected for security purposes.
+
+</Note>
+
+See [CircleCI's trusted publishing docs](https://circleci.com/docs/guides/deploy/deploy-to-npm-registry/#set-up-the-trusted-publisher-on-npm) for more details.
 
 ## Limitations and future improvements
 
